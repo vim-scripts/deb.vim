@@ -1,0 +1,4 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=1970
+
+Allows you to browse debian package in the same way you can browse .tar and .zip files.
+With this script, after opening a debian package with vim, you get a list of files included in the archive. You can then open those files.
