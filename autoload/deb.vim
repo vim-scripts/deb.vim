@@ -1,17 +1,19 @@
 " Vim autoload file for browsing debian package.
 " copyright (C) 2007, arno renevier <arenevier@fdn.fr>
 " Distributed under the GNU General Public License.
-" Last Change: 2007 July 26
+" Last Change: 2007 december 06.
 " 
 " Inspired by autoload/tar.vim by Charles E Campbell
 "
 " Latest version of that file can be found at
 " http://www.fdn.fr/~arenevier/vim/autoload/deb.vim
+" It should also be available at
+" http://www.vim.org/scripts/script.php?script_id=1970
 
 if &cp || exists("g:loaded_deb") || v:version < 700
     finish
 endif
-let g:loaded_deb= "v1"
+let g:loaded_deb= "v1.1"
 
 " return 1 if cmd exists
 " display error message and return 0 otherwise
@@ -186,7 +188,7 @@ fun! s:DebBrowseSelect()
     " it's .gz file, so is is unziped in deb#read, but filetype detect did not
     " work. Anyway, it must be a changelog
     if l:fname =~ "\.\/usr\/share\/doc\/.*\/changelog.Debian.gz$"
-        set filetype=changelog
+        set filetype=debchangelog
     endif
 
 endfun

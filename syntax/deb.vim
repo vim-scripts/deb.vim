@@ -1,10 +1,12 @@
 " Vim syntax file for browsing debian package.
 " copyright (C) 2007, arno renevier <arenevier@fdn.fr>
 " Distributed under the GNU General Public License.
-" Last Change: 2007 July 26
+" Last Change: 2007 December 06
 "
 " Latest version of that file can be found at
 " http://www.fdn.fr/~arenevier/vim/syntax/deb.vim
+" It should also be available at
+" http://www.vim.org/scripts/script.php?script_id=1970
 
 if exists("b:current_syntax")
  finish
