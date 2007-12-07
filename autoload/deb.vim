@@ -1,7 +1,7 @@
 " Vim autoload file for browsing debian package.
 " copyright (C) 2007, arno renevier <arenevier@fdn.fr>
-" Distributed under the GNU General Public License.
-" Last Change: 2007 december 06.
+" Distributed under the GNU General Public License (version 2 or above)
+" Last Change: 2007 december 07
 " 
 " Inspired by autoload/tar.vim by Charles E Campbell
 "
@@ -13,7 +13,7 @@
 if &cp || exists("g:loaded_deb") || v:version < 700
     finish
 endif
-let g:loaded_deb= "v1.1"
+let g:loaded_deb= "v1.2"
 
 " return 1 if cmd exists
 " display error message and return 0 otherwise

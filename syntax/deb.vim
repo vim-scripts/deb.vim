@@ -1,7 +1,7 @@
 " Vim syntax file for browsing debian package.
 " copyright (C) 2007, arno renevier <arenevier@fdn.fr>
-" Distributed under the GNU General Public License.
-" Last Change: 2007 December 06
+" Distributed under the GNU General Public License (version 2 or above)
+" Last Change: 2007 December 07
 "
 " Latest version of that file can be found at
 " http://www.fdn.fr/~arenevier/vim/syntax/deb.vim

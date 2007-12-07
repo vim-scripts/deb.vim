@@ -1,7 +1,7 @@
 " debPlugin.vim -- a Vim plugin for browsing debian packages
 " copyright (C) 2007, arno renevier <arenevier@fdn.fr>
-" Distributed under the GNU General Public License.
-" Last Change: 2007 December 06
+" Distributed under the GNU General Public License (version 2 or above)
+" Last Change: 2007 December 07
 "
 " This file only sets the autocommands. Functions are in autoload/deb.vim.
 "
