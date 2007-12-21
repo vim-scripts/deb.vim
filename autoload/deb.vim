@@ -1,7 +1,7 @@
 " Vim autoload file for browsing debian package.
 " copyright (C) 2007, arno renevier <arenevier@fdn.fr>
 " Distributed under the GNU General Public License (version 2 or above)
-" Last Change: 2007 december 07
+" Last Change: 2007 december 21
 " 
 " Inspired by autoload/tar.vim by Charles E Campbell
 "
@@ -13,7 +13,7 @@
 if &cp || exists("g:loaded_deb") || v:version < 700
     finish
 endif
-let g:loaded_deb= "v1.2"
+let g:loaded_deb= "v1.3"
 
 " return 1 if cmd exists
 " display error message and return 0 otherwise
@@ -68,13 +68,32 @@ fun! deb#read(debfile, member)
         endif
     endif
     
-    " unzip .gz as they are very common inside debian packages
     let l:gunzip_cmd = ""
-    if l:target =~ '.*\.gz$'
+        
+    "
+    " unzip man pages
+    "
+    if l:target =~ "\.\/usr\/share\/man\/.*\.gz$"
+        
+        " try to fail gracefully if a command is not available
+        if !s:hascmd("gzip")
+            return
+        elseif !s:hascmd("nroff") 
+            let l:gunzip_cmd = "| gzip -cd"
+        elseif !s:hascmd("col")
+            let l:gunzip_cmd = "| gzip -cd | nroff -mandoc"
+        else
+            let l:gunzip_cmd = "| gzip -cd | nroff -mandoc | col -b"
+        endif
+    
+    "
+    " unzip other .gz files
+    "
+    elseif l:target =~ '.*\.gz$'
         if !s:hascmd("gzip")
             return
         endif
-        let l:gunzip_cmd = "| gzip -cd "
+        let l:gunzip_cmd = "| gzip -cd"
     endif
 
     " read content
@@ -185,9 +204,11 @@ fun! s:DebBrowseSelect()
 
     filetype detect
 
-    " it's .gz file, so is is unziped in deb#read, but filetype detect did not
-    " work. Anyway, it must be a changelog
-    if l:fname =~ "\.\/usr\/share\/doc\/.*\/changelog.Debian.gz$"
+    " zipped files, are unziped in deb#read, but filetype may not
+    " automatically work.
+    if l:fname =~ "\.\/usr\/share\/man\/.*\.gz$"
+        set filetype=man
+    elseif l:fname =~ "\.\/usr\/share\/doc\/.*\/changelog.Debian.gz$"
         set filetype=debchangelog
     endif
 
