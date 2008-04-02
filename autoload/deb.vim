@@ -1,7 +1,7 @@
 " Vim autoload file for browsing debian package.
-" copyright (C) 2007, arno renevier <arenevier@fdn.fr>
+" copyright (C) 2007-2008, arno renevier <arenevier@fdn.fr>
 " Distributed under the GNU General Public License (version 2 or above)
-" Last Change: 2007 december 21
+" Last Change: 2008 april 1
 " 
 " Inspired by autoload/tar.vim by Charles E Campbell
 "
@@ -13,18 +13,7 @@
 if &cp || exists("g:loaded_deb") || v:version < 700
     finish
 endif
-let g:loaded_deb= "v1.3"
-
-" return 1 if cmd exists
-" display error message and return 0 otherwise
-fun s:hascmd(cmd)
-    if executable(a:cmd)
-        return 1
-    else
-        echohl Error | echo "***error*** " . a:cmd . " not available on your system"
-        return 0
-    else
-endfu
+let g:loaded_deb= "v1.4"
 
 fun! deb#read(debfile, member)
 
@@ -33,14 +22,29 @@ fun! deb#read(debfile, member)
         return
     endif
 
-    let l:archmember = "data.tar.gz" " default archive member to extract
     let l:target = a:member
 
+    let l:archmember = s:dataFileName(a:debfile) " default archive member to extract
+    if l:archmember == ""
+        echohl WarningMsg | echo "***error*** (deb#read) no valid data file found in debian archive"
+        return
+    elseif l:archmember == "data.tar.gz"
+        let l:unpcmp = "tar zxfO "
+    elseif l:archmember == "data.tar.bz2"
+        let l:unpcmp = "tar jxfO "
+    elseif l:archmember == "data.tar.lzma"
+        if !s:hascmd("lzma")
+            return
+        endif
+        let l:unpcmp = "lzma -d | tar xfO "
+    elseif l:archmember == "data.tar"
+        let l:unpcmp = "tar xfO "
+    endif
 
     if a:member =~ '^\* ' " information control file
         let l:archmember = "control.tar.gz"
         let l:target = substitute(l:target, "^\* ", "", "")
-
+        let l:unpcmp = "tar zxfO "
     elseif a:member =~ ' -> ' " symbolic link
         let l:target = split(a:member,' -> ')[0]
         let l:linkname = split(a:member,' -> ')[1]
@@ -68,7 +72,8 @@ fun! deb#read(debfile, member)
         endif
     endif
     
-    let l:gunzip_cmd = ""
+    " we may preprocess some files (such as man pages, or changelogs)
+    let l:preproccmd = ""
         
     "
     " unzip man pages
@@ -79,11 +84,11 @@ fun! deb#read(debfile, member)
         if !s:hascmd("gzip")
             return
         elseif !s:hascmd("nroff") 
-            let l:gunzip_cmd = "| gzip -cd"
+            let l:preproccmd = "| gzip -cd"
         elseif !s:hascmd("col")
-            let l:gunzip_cmd = "| gzip -cd | nroff -mandoc"
+            let l:preproccmd = "| gzip -cd | nroff -mandoc"
         else
-            let l:gunzip_cmd = "| gzip -cd | nroff -mandoc | col -b"
+            let l:preproccmd = "| gzip -cd | nroff -mandoc | col -b"
         endif
     
     "
@@ -93,11 +98,11 @@ fun! deb#read(debfile, member)
         if !s:hascmd("gzip")
             return
         endif
-        let l:gunzip_cmd = "| gzip -cd"
+        let l:preproccmd = "| gzip -cd"
     endif
 
     " read content
-    exe "silent r! ar p " . "'" . a:debfile . "'" . " " . l:archmember . " | tar zxfO - '" . l:target . "'" . l:gunzip_cmd
+    exe "silent r! ar p " . s:QuoteFile(a:debfile) . " " . s:QuoteFile(l:archmember) . " | " . l:unpcmp . " - " . s:QuoteFile(l:target) . l:preproccmd
     " error will be treated in calling function
     if v:shell_error != 0
         return
@@ -122,6 +127,10 @@ fun! deb#browse(file)
     if !filereadable(a:file)
         return
     endif
+    if a:file =~ "'"
+        echohl WarningMsg | echo "***error*** (deb#Browse) filename cannot contain quote character (" . a:file . ")"
+        return
+    endif
 
     let keepmagic = &magic
     set magic
@@ -142,13 +151,13 @@ fun! deb#browse(file)
 
     " display information control files
     let l:infopos = line(".")
-    exe "silent read! ar p '" . a:file . "' control.tar.gz | tar zt"
+    exe "silent read! ar p " . s:QuoteFile(a:file) . " control.tar.gz | tar zt"
 
     $put=''
 
     " display data files
     let l:listpos = line(".")
-    exe "silent read! dpkg -c ".a:file
+    exe "silent read! dpkg -c ". s:QuoteFile(a:file)
 
     " format information control list
     " removes '* ./' line
@@ -178,6 +187,10 @@ fun! s:DebBrowseSelect()
 
     " sanity check
     if (l:fname !~ '^\.\/') && (l:fname !~ '^\* \.\/')
+        return
+    endif
+    if l:fname =~ "'"
+        echohl WarningMsg | echo "***error*** (DebBrowseSelect) filename cannot contain quote character (" . l:fname . ")"
         return
     endif
 
@@ -213,3 +226,33 @@ fun! s:DebBrowseSelect()
     endif
 
 endfun
+
+" return data file name for debian package. This can be either data.tar.gz,
+" data.tar.bz2 or data.tar.lzma
+fun s:dataFileName(deb)
+    for fn in ["data.tar.gz", "data.tar.bz2", "data.tar.lzma", "data.tar"]
+        " [0:-2] is to remove trailing null character from command output
+        if (system("ar t " . "'" . a:deb . "'" . " " . fn))[0:-2] == fn
+            return fn
+        endif
+    endfor
+    return "" " no debian data format in this archive
+endfun
+
+fun s:QuoteFile(file)
+    " we need to escape %, #, <, and >
+    " see :help cmdline-specialk
+    return "'" .  substitute(a:file, '\([%#<>]\)', '\\\1', 'g') . "'"
+endfun
+
+" return 1 if cmd exists
+" display error message and return 0 otherwise
+fun s:hascmd(cmd)
+    if executable(a:cmd)
+        return 1
+    else
+        echohl Error | echo "***error*** " . a:cmd . " not available on your system"
+        return 0
+    else
+endfu
+
